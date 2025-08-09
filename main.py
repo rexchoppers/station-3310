@@ -132,7 +132,30 @@ class MainWindow(QMainWindow):
         self.mission_data.setColumnCount(0)
         self.mission_data.setRowCount(0)
         self.mission_data.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.content_layout.addWidget(self.mission_data)
+        # Make the data table take up more vertical space
+        self.content_layout.addWidget(self.mission_data, 1)  # Set stretch factor to 1
+        
+        # Add a horizontal layout for the broadcast controls underneath the data table
+        broadcast_controls = QWidget()
+        broadcast_layout = QHBoxLayout(broadcast_controls)
+        broadcast_controls.setMaximumHeight(50)  # Limit the height of broadcast controls
+
+        # Add text input field with validation
+        self.broadcast_text = QTextEdit()
+        self.broadcast_text.setFixedHeight(30)  # Make it a single line
+        self.broadcast_text.setPlaceholderText("Enter broadcast message (max 25 chars)")
+        self.broadcast_text.textChanged.connect(self.validate_broadcast_text)
+
+        # Add Generate button
+        self.generate_button = QPushButton("Generate")
+        self.generate_button.clicked.connect(self.on_generate_clicked)
+
+        # Add widgets to layout
+        broadcast_layout.addWidget(self.broadcast_text)
+        broadcast_layout.addWidget(self.generate_button)
+
+        # Add the broadcast controls to the content layout with no stretch
+        self.content_layout.addWidget(broadcast_controls, 0)  # Set stretch factor to 0
 
         main_layout.addWidget(self.content_widget)
         
@@ -201,6 +224,60 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self, "Error", f"Failed to add mission: {str(e)}"
             )
+            
+    def validate_broadcast_text(self):
+        """Validate the broadcast text input"""
+        text = self.broadcast_text.toPlainText()
+        
+        # Remove any punctuation or invalid characters
+        valid_text = ''.join(ch for ch in text if ch.isalpha() or ch.isspace())
+        
+        # Truncate to 25 characters
+        if len(valid_text) > 25:
+            valid_text = valid_text[:25]
+        
+        # Update the text if it changed
+        if valid_text != text:
+            self.broadcast_text.setPlainText(valid_text)
+            # Move cursor to the end
+            cursor = self.broadcast_text.textCursor()
+            cursor.movePosition(cursor.MoveOperation.End)
+            self.broadcast_text.setTextCursor(cursor)
+            
+    def on_generate_clicked(self):
+        """Handle Generate button click"""
+        # Check if there's a selected mission with data
+        if not self.current_mission or not self.current_mission.is_decrypted():
+            QMessageBox.warning(self, "Warning", "Please select a decrypted mission first")
+            return
+            
+        # Get the message text
+        message = self.broadcast_text.toPlainText().strip().upper()
+        
+        if not message:
+            QMessageBox.warning(self, "Warning", "Please enter a message to broadcast")
+            return
+        
+        # Check if there's at least one row in the pad
+        data = self.current_mission.get_data().splitlines()
+        if not data:
+            QMessageBox.warning(self, "Warning", "The selected mission has no one-time pad data")
+            return
+        
+        # Show confirmation dialog
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Broadcast Generation",
+            f"The first row in the pad will be used and removed after generation. Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            # Call the generate_broadcast function
+            generate_broadcast()
+            
+            QMessageBox.information(self, "Success", "Broadcast generated successfully")
             
     def remove_mission(self):
         if not self.current_mission:
