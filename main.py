@@ -21,7 +21,13 @@ def generate_broadcast():
         AudioSegment.from_mp3("resources/jingle.mp3") +
         AudioSegment.silent(duration=2000) +
         AudioSegment.from_mp3("resources/jingle.mp3") +
-        AudioSegment.silent(duration=2000)
+        AudioSegment.silent(duration=2000) +
+
+        AudioSegment.from_mp3("numbers/one.mp3")[:1000] +
+        AudioSegment.from_mp3("numbers/three.mp3")[:1000] +
+        AudioSegment.from_mp3("numbers/nine.mp3")[:1000] +
+        AudioSegment.from_mp3("numbers/nine.mp3")[:1000] +
+        AudioSegment.from_mp3("numbers/six.mp3")[:1000]
     )
 
     audio.export("broadcast.mp3", format="mp3")
