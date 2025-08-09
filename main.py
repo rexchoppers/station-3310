@@ -27,9 +27,7 @@ LETTER_TO_DIGIT[' '] = "00"
 # encoded = ''.join(LETTER_TO_DIGIT[ch] for ch in text)
 # print("Encoded:", encoded)
 
-def generate_broadcast():
-    example_mission_id = "F1YNE"
-
+def generate_broadcast(mission_id):
     broadcast_audio = (
         AudioSegment.from_mp3("resources/jingle.mp3") +
         AudioSegment.silent(duration=2000) +
@@ -42,7 +40,7 @@ def generate_broadcast():
 
     # Add the mission ID to the audio + repeat 5 times
     for _ in range(5):
-        broadcast_audio = append_mission_id_segment(broadcast_audio, example_mission_id)
+        broadcast_audio = append_mission_id_segment(broadcast_audio, mission_id)
         broadcast_audio += AudioSegment.silent(duration=1000)
 
     # Add howler for message segment
@@ -279,8 +277,10 @@ class MainWindow(QMainWindow):
         )
         
         if confirm == QMessageBox.StandardButton.Yes:
-            # Call the generate_broadcast function
-            generate_broadcast()
+            # Generate encoded message
+            encoded_message = ''.join(LETTER_TO_DIGIT.get(ch, "00") for ch in message)
+
+            generate_broadcast(self.current_mission.id)
             
             QMessageBox.information(self, "Success", "Broadcast generated successfully")
             
