@@ -62,33 +62,30 @@ class Mission:
                 print(f"Filename decryption error: {e}")
                 return False
 
-            # Decrypt the mission data
-            lines = self.data
+            try:
+                # Decrypt the mission data
+                data = self.data
 
-            print("Lines", lines)
+                # Try to decode the first line as base64
+                encrypted_bytes = base64.b64decode(data)
 
-            # First line might contain the nonce
-            if len(lines) > 0:
-                try:
-                    # Try to decode the first line as base64
-                    encrypted_bytes = base64.b64decode(lines[0])
+                # Extract nonce and ciphertext
+                nonce = encrypted_bytes[:12]
+                ciphertext = encrypted_bytes[12:]
 
-                    # Extract nonce and ciphertext
-                    nonce = encrypted_bytes[:12]
-                    ciphertext = encrypted_bytes[12:]
+                # Decrypt the data
+                plaintext = aesgcm.decrypt(nonce, ciphertext, None)
 
-                    # Decrypt the data
-                    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+                # Parse the decrypted JSON data
+                self.data = plaintext.decode('utf-8')
 
-                    # Parse the decrypted JSON data
-                    self.data = plaintext.decode('utf-8')
+                self._is_decrypted = True
 
-                    self._is_decrypted = True
+                return True
+            except Exception as e:
+                print(f"Decryption error: {e}")
+                return False
 
-                    return True
-                except Exception as e:
-                    print(f"Decryption error: {e}")
-                    return False
         except Exception as e:
             print(f"Error during decryption: {e}")
             return False
