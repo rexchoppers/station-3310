@@ -133,45 +133,18 @@ class MainWindow(QMainWindow):
             
             if not data_list:
                 return
-                
-            # Determine the structure of the data and set up the table accordingly
-            if isinstance(data_list[0], dict):
-                # Dictionary items - use keys as column headers
-                headers = list(data_list[0].keys())
-                self.mission_data.setColumnCount(len(headers))
-                self.mission_data.setHorizontalHeaderLabels(headers)
-                
-                # Add rows
-                for row_idx, item in enumerate(data_list):
-                    self.mission_data.insertRow(row_idx)
-                    for col_idx, key in enumerate(headers):
-                        value = item.get(key, "")
-                        table_item = QTableWidgetItem(str(value))
-                        table_item.setFlags(table_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                        self.mission_data.setItem(row_idx, col_idx, table_item)
-                        
-            elif isinstance(data_list[0], list):
-                # List items - use numeric column headers
-                max_cols = max(len(item) for item in data_list)
-                self.mission_data.setColumnCount(max_cols)
-                self.mission_data.setHorizontalHeaderLabels([str(i+1) for i in range(max_cols)])
-                
-                # Add rows
-                for row_idx, item in enumerate(data_list):
-                    self.mission_data.insertRow(row_idx)
-                    for col_idx, value in enumerate(item):
-                        self.mission_data.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
-            else:
+
                 # Primitive items - use a single column
-                self.mission_data.setColumnCount(1)
-                self.mission_data.setHorizontalHeaderLabels(["Data"])
-                
-                # Add rows
-                for row_idx, item in enumerate(data_list):
-                    self.mission_data.insertRow(row_idx)
-                    self.mission_data.setItem(row_idx, 0, QTableWidgetItem(str(item)))
-                    
-            # Resize columns to content
+            self.mission_data.setColumnCount(1)
+            self.mission_data.setHorizontalHeaderLabels(["Data"])
+
+            # Add rows
+            for row_idx, item in enumerate(data_list):
+                self.mission_data.insertRow(row_idx)
+                table_item = QTableWidgetItem(str(item))
+                table_item.setFlags(table_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.mission_data.setItem(row_idx, 0, table_item)
+
             self.mission_data.resizeColumnsToContents()
 
 
