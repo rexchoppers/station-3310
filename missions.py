@@ -111,6 +111,10 @@ def get_missions():
         return missions
 
     for item in missions_dir.iterdir():
+        # Skip directories and non-txt files
+        if item.is_dir() or item.suffix.lower() != '.txt':
+            continue
+
         encrypted_mission_id = item.stem
 
         mission = Mission(encrypted_mission_id)
