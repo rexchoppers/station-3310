@@ -3,7 +3,8 @@ import sys
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QListWidget, QVBoxLayout, QWidget, QHBoxLayout,
-    QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView
+    QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView,
+    QSizePolicy
 )
 
 from PyQt6.QtCore import Qt
@@ -138,6 +139,8 @@ class MainWindow(QMainWindow):
         # Add a horizontal layout for the broadcast controls underneath the data table
         broadcast_controls = QWidget()
         broadcast_layout = QHBoxLayout(broadcast_controls)
+        broadcast_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins to align with data grid
+        broadcast_layout.setSpacing(10)  # Add spacing between widgets
         broadcast_controls.setMaximumHeight(50)  # Limit the height of broadcast controls
 
         # Add text input field with validation
@@ -145,10 +148,12 @@ class MainWindow(QMainWindow):
         self.broadcast_text.setFixedHeight(30)  # Make it a single line
         self.broadcast_text.setPlaceholderText("Enter broadcast message (max 25 chars)")
         self.broadcast_text.textChanged.connect(self.validate_broadcast_text)
+        self.broadcast_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Expand horizontally
 
         # Add Generate button
         self.generate_button = QPushButton("Generate")
         self.generate_button.clicked.connect(self.on_generate_clicked)
+        self.generate_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)  # Fixed size
 
         # Add widgets to layout
         broadcast_layout.addWidget(self.broadcast_text)
