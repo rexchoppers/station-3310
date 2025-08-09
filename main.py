@@ -1,20 +1,31 @@
 import base64
-import json
 import sys
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QListWidget, QVBoxLayout, QWidget, QHBoxLayout,
     QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView
 )
+
 from PyQt6.QtCore import Qt
+from pydub import AudioSegment
 
 from missions import get_missions, add_mission, remove_mission
-
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # Encryption key for mission data (256-bit key)
 # This will be set by user input
 key = None
+
+def generate_broadcast():
+    audio = (
+        AudioSegment.from_mp3("resources/jingle.mp3") +
+        AudioSegment.silent(duration=2000) +
+        AudioSegment.from_mp3("resources/jingle.mp3") +
+        AudioSegment.silent(duration=2000)
+    )
+
+    audio.export("broadcast.mp3", format="mp3")
+    print("Broadcast saved as broadcast.mp3")
 
 def generate_and_save_key(filepath: str):
     key = AESGCM.generate_key(bit_length=256)  # bytes
@@ -39,6 +50,8 @@ class MainWindow(QMainWindow):
         # Store loaded missions
         self.missions = []
         self.current_mission = None
+
+        generate_broadcast()
 
         # generate_and_save_key("key.txt")
 
@@ -113,9 +126,6 @@ class MainWindow(QMainWindow):
         for mission in self.missions:
             self.mission_list.addItem(mission.id)
 
-            print("Mission ID:", mission.id)
-            print("Mission Data:", mission.data)
-    
     def on_mission_selected(self, index):
         """Handle mission selection from the list"""
         if index < 0 or index >= len(self.missions):
