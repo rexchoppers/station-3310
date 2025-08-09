@@ -136,14 +136,15 @@ class MainWindow(QMainWindow):
             
         # Check if mission is decrypted
         if self.current_mission.is_decrypted():
-            mission_data = self.current_mission.get_data()
-            data_list = json.loads(mission_data)
+            data = self.current_mission.get_data()
 
             self.mission_data.setColumnCount(1)
             self.mission_data.setHorizontalHeaderLabels(["Data"])
 
+            data = data.splitlines()
+
             # Add rows
-            for row_idx, item in enumerate(data_list):
+            for row_idx, item in enumerate(data):
                 self.mission_data.insertRow(row_idx)
                 table_item = QTableWidgetItem(str(item))
                 table_item.setFlags(table_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
