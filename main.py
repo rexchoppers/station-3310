@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from missions import get_missions, add_mission
+from missions import get_missions, add_mission, remove_mission
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -78,6 +78,12 @@ class MainWindow(QMainWindow):
         add_mission_button.clicked.connect(self.add_mission)
         left_layout.addWidget(add_mission_button)
         
+        # Add "Remove Mission" button
+        self.remove_mission_button = QPushButton("Remove Mission")
+        self.remove_mission_button.clicked.connect(self.remove_mission)
+        self.remove_mission_button.setEnabled(False)  # Disable until a mission is selected
+        left_layout.addWidget(self.remove_mission_button)
+        
         main_layout.addWidget(left_panel)
         
         # Create content area (right side)
@@ -98,13 +104,9 @@ class MainWindow(QMainWindow):
 
         self.show()
 
-
-
-
-
     def refresh_mission_list(self):
         self.mission_list.clear()
-        self.missions = get_missions()
+        self.missions = get_missions(key)
 
         for mission in self.missions:
             self.mission_list.addItem(mission.id)
@@ -113,9 +115,11 @@ class MainWindow(QMainWindow):
     def on_mission_selected(self, index):
         """Handle mission selection from the list"""
         if index < 0 or index >= len(self.missions):
+            self.remove_mission_button.setEnabled(False)
             return
             
         self.current_mission = self.missions[index]
+        self.remove_mission_button.setEnabled(True)
         self.update_mission_display()
     
     def update_mission_display(self):
@@ -130,11 +134,7 @@ class MainWindow(QMainWindow):
         if self.current_mission.is_decrypted():
             mission_data = self.current_mission.get_data()
             data_list = json.loads(mission_data)
-            
-            if not data_list:
-                return
 
-                # Primitive items - use a single column
             self.mission_data.setColumnCount(1)
             self.mission_data.setHorizontalHeaderLabels(["Data"])
 
@@ -164,6 +164,54 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self, "Error", f"Failed to add mission: {str(e)}"
             )
+            
+    def remove_mission(self):
+        if not self.current_mission:
+            return
+            
+        # Show confirmation dialog
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Removal",
+            f"Are you sure you want to remove mission '{self.current_mission.id}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            try:
+                # Get mission from `missions` list
+                mission_to_remove = None
+
+                for mission in self.missions:
+                    if mission.id == self.current_mission.id:
+                        mission_to_remove = mission
+                        break
+
+                success = remove_mission(mission_to_remove)
+                
+                if success:
+                    QMessageBox.information(self, "Success", f"Mission '{mission_to_remove.id}' removed successfully")
+                    
+                    # Clear current mission
+                    self.current_mission = None
+                    
+                    # Refresh the mission list
+                    self.refresh_mission_list()
+                    
+                    # Clear the mission display
+                    self.mission_data.clear()
+                    self.mission_data.setRowCount(0)
+                    self.mission_data.setColumnCount(0)
+                    
+                    # Disable the remove button
+                    self.remove_mission_button.setEnabled(False)
+                else:
+                    QMessageBox.warning(self, "Warning", f"Could not find mission file to remove")
+            except Exception as e:
+                QMessageBox.critical(
+                    self, "Error", f"Failed to remove mission: {str(e)}"
+                )
 
 app = QApplication(sys.argv)
 w = MainWindow()

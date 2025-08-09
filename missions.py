@@ -4,13 +4,13 @@ import os
 from pathlib import Path
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-import main
 from crypt import generate_mission_id, generate_pad
 
 
 class Mission:
     def __init__(self, mission_id):
         self.id = mission_id
+        self.encrypted_id = None
         self.data = ""
         self._is_decrypted = False
 
@@ -30,6 +30,7 @@ class Mission:
             raise FileNotFoundError(f"Mission {self.id} not found")
 
     def decrypt(self, key):
+        self.encrypted_id = self.id
 
         print("Decrypting mission:", self.id)
         if self._is_decrypted:
@@ -92,6 +93,25 @@ class Mission:
             print(f"Error during decryption: {e}")
             return False
 
+    def encrypt(self, key):
+        # Encrypt the data
+        aesgcm = AESGCM(key)
+        nonce = os.urandom(12)
+        ciphertext = aesgcm.encrypt(nonce, self.data.encode('utf-8'), None)
+
+        # Combine nonce and ciphertext and encode as base64
+        encrypted_data = base64.b64encode(nonce + ciphertext)
+
+        self.data = encrypted_data
+
+        # Encrypt the filename
+        filename_nonce = os.urandom(12)
+        filename_ciphertext = aesgcm.encrypt(filename_nonce, self.id.encode('utf-8'), None)
+        encrypted_filename = base64.b64encode(filename_nonce + filename_ciphertext).decode('utf-8')
+        encrypted_filename = encrypted_filename.replace('/', '_').replace('+', '-').replace('=', '')
+
+        self.id = encrypted_filename
+
     def is_decrypted(self):
         return self._is_decrypted
 
@@ -99,7 +119,7 @@ class Mission:
         return self.data
 
 
-def get_missions():
+def get_missions(key):
     from pathlib import Path
 
     current_dir = Path(__file__).parent
@@ -111,14 +131,13 @@ def get_missions():
         return missions
 
     for item in missions_dir.iterdir():
-        # Skip directories and non-txt files
         if item.is_dir() or item.suffix.lower() != '.txt':
             continue
 
         encrypted_mission_id = item.stem
 
         mission = Mission(encrypted_mission_id)
-        mission.decrypt(main.key)
+        mission.decrypt(key)
         missions.append(mission)
     return missions
 
@@ -137,14 +156,6 @@ def add_mission(key, mission_data=None):
     else:
         json_data = str(mission_data)
 
-    # Encrypt the data
-    aesgcm = AESGCM(key)
-    nonce = os.urandom(12)
-    ciphertext = aesgcm.encrypt(nonce, json_data.encode('utf-8'), None)
-
-    # Combine nonce and ciphertext and encode as base64
-    encrypted_data = base64.b64encode(nonce + ciphertext)
-
     # Get the missions directory path
     current_dir = Path(__file__).parent
     missions_dir = (current_dir / "missions").resolve()
@@ -153,21 +164,34 @@ def add_mission(key, mission_data=None):
     if not missions_dir.exists():
         missions_dir.mkdir(parents=True)
 
-    # Encrypt the filename
-    filename_nonce = os.urandom(12)
-    filename_ciphertext = aesgcm.encrypt(filename_nonce, mission_id.encode('utf-8'), None)
-    encrypted_filename = base64.b64encode(filename_nonce + filename_ciphertext).decode('utf-8')
-    encrypted_filename = encrypted_filename.replace('/', '_').replace('+', '-').replace('=', '')
+    mission = Mission(mission_id)
+    mission.encrypt(key)
 
     # Save file with encrypted filename + encrypted raw pad data
-    mission_file = missions_dir / f"{encrypted_filename}.txt"
+    mission_file = missions_dir / f"{mission.id}.txt"
 
     with open(mission_file, 'wb') as f:
-        f.write(encrypted_data)
+        f.write(mission.data)
 
-    mission = Mission(mission_id)
     mission.decrypt(key)
 
     print(mission.data)
 
     return mission
+
+
+def remove_mission(mission):
+    try:
+        current_dir = Path(__file__).parent
+        missions_dir = (current_dir / "missions").resolve()
+
+        mission_file = missions_dir / f"{mission.encrypted_id}.txt"
+        
+        if mission_file.exists():
+            mission_file.unlink()
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"Error removing mission: {e}")
+        return False
