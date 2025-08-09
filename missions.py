@@ -14,10 +14,7 @@ class Mission:
         self.data = ""
         self._is_decrypted = False
 
-        # Load the encrypted mission data
         self._load_mission_data()
-
-        print("Constructro is decrypting mission:", self.is_decrypted())
 
     def _load_mission_data(self):
         current_dir = Path(__file__).parent
@@ -35,9 +32,8 @@ class Mission:
     def decrypt(self, key):
 
         print("Decrypting mission:", self.id)
-        # if self._is_decrypted:
-        #  print("Already decrypted, skipping.")
-        # return True
+        if self._is_decrypted:
+            return True
 
         try:
             print("Decrypt called", key)
