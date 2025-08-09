@@ -4,3 +4,5 @@
 # Ignore everything missions/ but the .gitkeep file
 missions/*
 !missions/.gitkeep
+
+__pycache__
