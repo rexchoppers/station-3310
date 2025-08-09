@@ -63,7 +63,9 @@ class Mission:
                 return False
 
             # Decrypt the mission data
-            lines = self.data.strip().split('\n')
+            lines = self.data
+
+            print("Lines", lines)
 
             # First line might contain the nonce
             if len(lines) > 0:
@@ -135,6 +137,8 @@ def get_missions(key):
         encrypted_mission_id = item.stem
 
         mission = Mission(encrypted_mission_id)
+        mission.load()
+
         mission.decrypt(key)
         missions.append(mission)
     return missions

@@ -108,9 +108,13 @@ class MainWindow(QMainWindow):
         self.mission_list.clear()
         self.missions = get_missions(key)
 
+        print("Refresh called")
+
         for mission in self.missions:
             self.mission_list.addItem(mission.id)
-            print(mission.data)
+
+            print("Mission ID:", mission.id)
+            print("Mission Data:", mission.data)
     
     def on_mission_selected(self, index):
         """Handle mission selection from the list"""
@@ -151,12 +155,9 @@ class MainWindow(QMainWindow):
     def add_mission(self):
         try:
             mission = add_mission(key)
-            mission.decrypt(key)
+            # mission.decrypt(key)
             
-            # Add the new mission to our list
-            self.missions.append(mission)
-            
-            QMessageBox.information(self, "Success", f"Mission '{mission.id}' added successfully")
+            # QMessageBox.information(self, "Success", f"Mission '{mission.id}' added successfully")
             
             # Refresh the mission list
             self.refresh_mission_list()
