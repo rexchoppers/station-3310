@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from pydub import AudioSegment
 
+from audio import append_mission_id_segment
 from missions import get_missions, add_mission, remove_mission
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -16,21 +17,38 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 # This will be set by user input
 key = None
 
-def generate_broadcast():
-    audio = (
-        AudioSegment.from_mp3("resources/jingle.mp3") +
-        AudioSegment.silent(duration=2000) +
-        AudioSegment.from_mp3("resources/jingle.mp3") +
-        AudioSegment.silent(duration=2000) +
+# Letter to two-digit number (A=01 to Z=26, space=00)
+LETTER_TO_DIGIT = {chr(i + 65): f"{i + 1:02d}" for i in range(26)}
+LETTER_TO_DIGIT[' '] = "00"
 
-        AudioSegment.from_mp3("numbers/one.mp3")[:1000] +
-        AudioSegment.from_mp3("numbers/three.mp3")[:1000] +
-        AudioSegment.from_mp3("numbers/nine.mp3")[:1000] +
-        AudioSegment.from_mp3("numbers/nine.mp3")[:1000] +
-        AudioSegment.from_mp3("numbers/six.mp3")[:1000]
+# Test example
+# text = "MEET AT DAWN"
+# encoded = ''.join(LETTER_TO_DIGIT[ch] for ch in text)
+# print("Encoded:", encoded)
+
+def generate_broadcast():
+    example_mission_id = "F1YNE"
+
+    broadcast_audio = (
+        AudioSegment.from_mp3("resources/jingle.mp3") +
+        AudioSegment.silent(duration=2000) +
+        AudioSegment.from_mp3("resources/jingle.mp3") +
+        AudioSegment.silent(duration=2000) +
+        AudioSegment.from_mp3("resources/jingle.mp3") +
+        AudioSegment.silent(duration=2000)
     )
 
-    audio.export("broadcast.mp3", format="mp3")
+
+    # Add the mission ID to the audio + repeat 5 times
+    for _ in range(5):
+        broadcast_audio = append_mission_id_segment(broadcast_audio, example_mission_id)
+        broadcast_audio += AudioSegment.silent(duration=1000)
+
+    # Add howler for message segment
+    broadcast_audio += AudioSegment.silent(duration=1000)
+    broadcast_audio += AudioSegment.from_mp3("resources/howler.mp3")[:10000]
+
+    broadcast_audio.export("broadcast.mp3", format="mp3")
     print("Broadcast saved as broadcast.mp3")
 
 def generate_and_save_key(filepath: str):
