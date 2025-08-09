@@ -1,18 +1,16 @@
 import base64
+import json
 import sys
-
-from dotenv import load_dotenv
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QListWidget, QVBoxLayout, QWidget, QHBoxLayout,
-    QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit
+    QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView
 )
+from PyQt6.QtCore import Qt
 
-from missions import get_missions, Mission, add_mission
+from missions import get_missions, add_mission
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-
-load_dotenv()
 
 # Encryption key for mission data (256-bit key)
 # This will be set by user input
@@ -86,15 +84,12 @@ class MainWindow(QMainWindow):
         self.content_widget = QWidget()
         self.content_layout = QVBoxLayout(self.content_widget)
         
-        # Add mission title label
-        self.mission_title = QLabel("Select a mission")
-        self.mission_title.setStyleSheet("font-size: 18px; font-weight: bold;")
-        self.content_layout.addWidget(self.mission_title)
-        
-        # Add mission description
-        self.mission_description = QTextEdit()
-        self.mission_description.setReadOnly(True)
-        self.content_layout.addWidget(self.mission_description)
+        # Add mission data as a table
+        self.mission_data = QTableWidget()
+        self.mission_data.setColumnCount(0)
+        self.mission_data.setRowCount(0)
+        self.mission_data.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.content_layout.addWidget(self.mission_data)
 
         main_layout.addWidget(self.content_widget)
         
@@ -124,18 +119,60 @@ class MainWindow(QMainWindow):
         self.update_mission_display()
     
     def update_mission_display(self):
-        """Update the mission display area with the current mission data"""
+        self.mission_data.clear()
+        self.mission_data.setRowCount(0)
+        self.mission_data.setColumnCount(0)
+        
         if not self.current_mission:
-            self.mission_title.setText("Select a mission")
-            self.mission_description.setText("")
             return
             
-        # Update mission title
-        self.mission_title.setText(f"Mission: {self.current_mission.id}")
-        
         # Check if mission is decrypted
         if self.current_mission.is_decrypted():
             mission_data = self.current_mission.get_data()
+            data_list = json.loads(mission_data)
+            
+            if not data_list:
+                return
+                
+            # Determine the structure of the data and set up the table accordingly
+            if isinstance(data_list[0], dict):
+                # Dictionary items - use keys as column headers
+                headers = list(data_list[0].keys())
+                self.mission_data.setColumnCount(len(headers))
+                self.mission_data.setHorizontalHeaderLabels(headers)
+                
+                # Add rows
+                for row_idx, item in enumerate(data_list):
+                    self.mission_data.insertRow(row_idx)
+                    for col_idx, key in enumerate(headers):
+                        value = item.get(key, "")
+                        table_item = QTableWidgetItem(str(value))
+                        table_item.setFlags(table_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                        self.mission_data.setItem(row_idx, col_idx, table_item)
+                        
+            elif isinstance(data_list[0], list):
+                # List items - use numeric column headers
+                max_cols = max(len(item) for item in data_list)
+                self.mission_data.setColumnCount(max_cols)
+                self.mission_data.setHorizontalHeaderLabels([str(i+1) for i in range(max_cols)])
+                
+                # Add rows
+                for row_idx, item in enumerate(data_list):
+                    self.mission_data.insertRow(row_idx)
+                    for col_idx, value in enumerate(item):
+                        self.mission_data.setItem(row_idx, col_idx, QTableWidgetItem(str(value)))
+            else:
+                # Primitive items - use a single column
+                self.mission_data.setColumnCount(1)
+                self.mission_data.setHorizontalHeaderLabels(["Data"])
+                
+                # Add rows
+                for row_idx, item in enumerate(data_list):
+                    self.mission_data.insertRow(row_idx)
+                    self.mission_data.setItem(row_idx, 0, QTableWidgetItem(str(item)))
+                    
+            # Resize columns to content
+            self.mission_data.resizeColumnsToContents()
 
 
     def add_mission(self):

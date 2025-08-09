@@ -165,7 +165,6 @@ def add_mission(key, mission_data=None):
     with open(mission_file, 'wb') as f:
         f.write(encrypted_data)
 
-    # Return the mission with the original unencrypted ID for use in the application
     mission = Mission(mission_id)
     mission.decrypt(key)
 
