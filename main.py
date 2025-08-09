@@ -151,6 +151,7 @@ class MainWindow(QMainWindow):
     def add_mission(self):
         try:
             mission = add_mission(key)
+            mission.decrypt(key)
             
             # Add the new mission to our list
             self.missions.append(mission)

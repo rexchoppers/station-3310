@@ -14,9 +14,7 @@ class Mission:
         self.data = ""
         self._is_decrypted = False
 
-        self._load_mission_data()
-
-    def _load_mission_data(self):
+    def load(self):
         current_dir = Path(__file__).parent
         missions_dir = (current_dir / "missions").resolve()
 
@@ -142,21 +140,10 @@ def get_missions(key):
     return missions
 
 
-def add_mission(key, mission_data=None):
+def add_mission(key):
     mission_id = generate_mission_id()
     pad = generate_pad()
 
-    # If no mission data provided, use the pad as the raw mission data
-    if mission_data is None:
-        mission_data = pad
-
-    # Convert to string if needed
-    if isinstance(mission_data, (dict, list)):
-        json_data = json.dumps(mission_data)
-    else:
-        json_data = str(mission_data)
-
-    # Get the missions directory path
     current_dir = Path(__file__).parent
     missions_dir = (current_dir / "missions").resolve()
 
@@ -165,17 +152,15 @@ def add_mission(key, mission_data=None):
         missions_dir.mkdir(parents=True)
 
     mission = Mission(mission_id)
+
+    for row in pad:
+        mission.data += row + '\n'
+
     mission.encrypt(key)
 
-    # Save file with encrypted filename + encrypted raw pad data
     mission_file = missions_dir / f"{mission.id}.txt"
-
     with open(mission_file, 'wb') as f:
         f.write(mission.data)
-
-    mission.decrypt(key)
-
-    print(mission.data)
 
     return mission
 
