@@ -1,0 +1,6 @@
+.venv
+.idea
+
+# Ignore everything missions/ but the .gitkeep file
+missions/*
+!missions/.gitkeep

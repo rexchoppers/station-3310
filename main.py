@@ -1,9 +1,6 @@
 import base64
 import sys
-import os
-import json
 
-from pathlib import Path
 from dotenv import load_dotenv
 
 from PyQt6.QtWidgets import (
@@ -11,9 +8,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit
 )
 
-import crypt
 from missions import get_missions, Mission, add_mission
-from crypt import generate_mission_id
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -100,16 +95,6 @@ class MainWindow(QMainWindow):
         self.mission_description = QTextEdit()
         self.mission_description.setReadOnly(True)
         self.content_layout.addWidget(self.mission_description)
-        
-        # Add mission steps
-        self.mission_steps = QTextEdit()
-        self.mission_steps.setReadOnly(True)
-        self.content_layout.addWidget(self.mission_steps)
-        
-        # Add decrypt button
-        self.decrypt_button = QPushButton("Decrypt Mission")
-        self.decrypt_button.setVisible(False)
-        self.content_layout.addWidget(self.decrypt_button)
 
         main_layout.addWidget(self.content_widget)
         
@@ -127,10 +112,8 @@ class MainWindow(QMainWindow):
         self.missions = get_missions()
 
         for mission in self.missions:
-            item_text = mission.id
-            if not mission.is_decrypted():
-                item_text += " [ENCRYPTED]"
-            self.mission_list.addItem(item_text)
+            self.mission_list.addItem(mission.id)
+            print(mission.data)
     
     def on_mission_selected(self, index):
         """Handle mission selection from the list"""
@@ -145,8 +128,6 @@ class MainWindow(QMainWindow):
         if not self.current_mission:
             self.mission_title.setText("Select a mission")
             self.mission_description.setText("")
-            self.mission_steps.setText("")
-            self.decrypt_button.setVisible(False)
             return
             
         # Update mission title
@@ -155,15 +136,8 @@ class MainWindow(QMainWindow):
         # Check if mission is decrypted
         if self.current_mission.is_decrypted():
             mission_data = self.current_mission.get_data()
-            
-            self.decrypt_button.setVisible(False)
-        else:
-            # Show encrypted message and decrypt button
-            self.mission_description.setText("This mission is encrypted.")
-            self.mission_steps.setText("Decrypt the mission to view its contents.")
-            self.decrypt_button.setVisible(True)
 
-            
+
     def add_mission(self):
         try:
             mission = add_mission(key)
