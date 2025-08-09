@@ -9,13 +9,14 @@ def generate_mission_id():
 
     return mission_id
 
-def generate_pad(pages=100, groups_per_page=10, group_length=10):
-    alphabet = string.ascii_uppercase
+def generate_pad(pages=100, groups_per_page=10, group_length=5):
+    digits = string.digits
     pad = []
     for _ in range(pages):
         page = []
         for _ in range(groups_per_page):
-            group = ''.join(secrets.choice(alphabet) for _ in range(group_length))
+            # Using secrets module for cryptographically strong random numbers
+            group = ''.join(secrets.choice(digits) for _ in range(group_length))
             page.append(group)
         pad.append(' '.join(page))
     return pad
