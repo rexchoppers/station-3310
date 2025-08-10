@@ -5,4 +5,7 @@
 missions/*
 !missions/.gitkeep
 
+output/*
+!output/.gitkeep
+
 __pycache__
