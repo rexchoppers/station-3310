@@ -95,28 +95,6 @@ The application uses modern cryptography (AES-GCM) for secure storage of mission
 - Keep your encryption key secure - without it, you won't be able to access your missions
 - Each pad row is used only once and then removed from the mission data
 
-## Testing
-
-The application includes a comprehensive test suite covering all major functionality. Tests are organized by module and include both unit tests and integration tests.
-
-### Running Tests
-
-1. Install the testing dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-2. Run all tests:
-   ```
-   python tests/run_tests.py
-   ```
-
-3. Run specific test modules:
-   ```
-   python tests/run_tests.py test_crypt
-   python tests/run_tests.py test_missions test_decode
-   ```
-
 ## License
 See the [LICENSE](LICENSE) file for details.
 
