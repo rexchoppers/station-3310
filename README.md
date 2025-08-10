@@ -117,20 +117,6 @@ The application includes a comprehensive test suite covering all major functiona
    python tests/run_tests.py test_missions test_decode
    ```
 
-### Test Coverage
-
-The test suite includes:
-
-- **Unit Tests**:
-  - `test_crypt.py`: Tests for cryptographic operations (encryption, decryption, key generation)
-  - `test_missions.py`: Tests for mission management (creation, retrieval, deletion)
-  - `test_document.py`: Tests for PDF document generation
-  - `test_audio.py`: Tests for audio broadcast generation
-  - `test_decode.py`: Tests for message decoding functionality
-
-- **Integration Tests**:
-  - `test_integration.py`: Tests the full workflow from mission creation to broadcast generation and decoding
-
 ## License
 See the [LICENSE](LICENSE) file for details.
 
