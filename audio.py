@@ -186,7 +186,7 @@ def generate_broadcast(mission_id, ciphertext):
 
     # Add howler for message segment
     broadcast_audio += AudioSegment.silent(duration=1000)
-    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:10000] - 2)
+    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:2000] - 5)
 
     # Add a pause before the message
     broadcast_audio += AudioSegment.silent(duration=1000)
@@ -203,7 +203,7 @@ def generate_broadcast(mission_id, ciphertext):
             broadcast_audio += AudioSegment.silent(duration=2000)  # Add a pause after each group
 
     # Message end howl
-    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:2000] - 2)
+    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:2000] - 5)
 
     # Format current date and time
     current_time = datetime.datetime.now()
