@@ -101,3 +101,4 @@ See the [LICENSE](LICENSE) file for details.
 ## Credits
 - Jingle: [https://www.youtube.com/watch?v=tpeWHtlIsB4](https://www.youtube.com/watch?v=tpeWHtlIsB4)
 - Howler: [https://www.youtube.com/watch?v=m3Gbj9XyC3Y](https://www.youtube.com/watch?v=m3Gbj9XyC3Y)
+- Voice Samples: [https://luvvoice.com](https://luvvoice.com/)
