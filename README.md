@@ -38,7 +38,7 @@ The application uses modern cryptography (AES-GCM) for secure storage of mission
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/station-3310.git
+   git clone https://github.com/rexchoppers/station-3310.git
    cd station-3310
    ```
 
