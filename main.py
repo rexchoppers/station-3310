@@ -12,7 +12,9 @@ from pydub import AudioSegment
 
 import crypt
 from audio import append_mission_id_segment, audio_mapping
+from document import generate_spy_pad_pdf
 from missions import get_missions, add_mission, remove_mission
+from pdf_preview_widget import PdfPreviewWidget
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # Encryption key for mission data (256-bit key)
@@ -93,9 +95,13 @@ class MainWindow(QMainWindow):
         self.missions = []
         self.current_mission = None
 
-        # generate_broadcast()
-
         # generate_and_save_key("key.txt")
+
+        generate_spy_pad_pdf([
+    "25379069853909871425493582770175334845224302770051",
+    "33823317593054984612432233190636311392197434722287",
+    "47981234567890123456789012345678901234567890123456"
+])
 
         # Prompt the user input for the encryption key
         global key
@@ -235,21 +241,32 @@ class MainWindow(QMainWindow):
 
             self.mission_data.resizeColumnsToContents()
 
-
     def add_mission(self):
         try:
             mission = add_mission(key)
             # mission.decrypt(key)
-            
-            # QMessageBox.information(self, "Success", f"Mission '{mission.id}' added successfully")
-            
-            # Refresh the mission list
+
+            # Refresh mission list
             self.refresh_mission_list()
 
+            # Get pad lines (assuming mission.get_data() returns pad lines as list or multiline string)
+            pad_data = mission.get_data()
+            pad_lines = pad_data.splitlines()  # List of pad rows
+
+            # Generate PDF bytes (make sure generate_spy_pad_pdf_bytes is imported)
+            pdf_bytes = generate_spy_pad_pdf(pad_lines)
+
+            # Show preview widget
+            preview = PdfPreviewWidget(pdf_bytes)
+            preview.setWindowTitle(f"Mission {mission.id} Pad Preview")
+            preview.resize(800, 600)
+            preview.show()
+
+            # Keep a reference to prevent garbage collection if needed
+            self.current_pdf_preview = preview
+
         except Exception as e:
-            QMessageBox.critical(
-                self, "Error", f"Failed to add mission: {str(e)}"
-            )
+            QMessageBox.critical(self, "Error", f"Failed to add mission: {str(e)}")
             
     def validate_broadcast_text(self):
         """Validate the broadcast text input"""
