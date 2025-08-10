@@ -348,6 +348,9 @@ class MainWindow(QMainWindow):
             # Update the mission display
             self.update_mission_display()
             
+            # Clear the broadcast message after generation
+            self.broadcast_text.clear()
+            
             QMessageBox.information(self, "Success", "Broadcast generated successfully and pad row removed")
             
     def remove_mission(self):
