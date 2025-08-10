@@ -4,10 +4,11 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QListWidget, QVBoxLayout, QWidget, QHBoxLayout,
     QPushButton, QInputDialog, QMessageBox, QLabel, QTextEdit, QTableWidget, QTableWidgetItem, QHeaderView,
-    QSizePolicy
+    QSizePolicy, QDialog, QLineEdit, QGridLayout, QStyledItemDelegate
 )
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtGui import QRegularExpressionValidator, QFont
 
 import crypt
 from audio import generate_broadcast
@@ -15,6 +16,230 @@ from document import generate_spy_pad_pdf, preview_pdf_external
 from missions import get_missions, add_mission, remove_mission
 
 key = None
+
+class DigitItemDelegate(QStyledItemDelegate):
+    """Custom item delegate to restrict input to single digits"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+    def createEditor(self, parent, option, index):
+        """Create a line edit with validation for digits only"""
+        editor = QLineEdit(parent)
+        editor.setMaxLength(1)  # Limit to one character
+        editor.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Set validator to only allow digits
+        validator = QRegularExpressionValidator(QRegularExpression("[0-9]"), editor)
+        editor.setValidator(validator)
+        
+        return editor
+    
+    def setModelData(self, editor, model, index):
+        """Set the model data and move focus to the next cell if a digit was entered"""
+        text = editor.text()
+        model.setData(index, text, Qt.ItemDataRole.EditRole)
+        
+        # If a digit was entered, move to the next cell
+        if text and text.isdigit():
+            # Get the table widget
+            table = self.parent()
+            
+            # Determine the next cell to focus
+            current_row = index.row()
+            current_col = index.column()
+            
+            # Move to the next column in the same row
+            if current_col < table.columnCount() - 1:
+                next_index = table.model().index(current_row, current_col + 1)
+                table.setCurrentIndex(next_index)
+                table.edit(next_index)
+    
+    def paint(self, painter, option, index):
+        """Custom painting for the cells"""
+        # Use default painting
+        super().paint(painter, option, index)
+
+class DecodeWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Decode Only")
+        self.setFixedSize(1400, 300)  # Adjusted width for 10 input fields per row
+        
+        main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(15)  # Increased spacing for better visual separation
+        
+        # Create a grid layout for the input fields
+        input_widget = QWidget()
+        input_layout = QGridLayout(input_widget)
+        input_layout.setSpacing(10)  # Space between fields
+        
+        # Create 10 input fields in 2 rows of 10
+        self.input_fields = []
+        
+        # Create labels for pad and cipher rows
+        pad_label = QLabel("Pad:")
+        pad_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
+        input_layout.addWidget(pad_label, 0, 0)
+        
+        cipher_label = QLabel("Cipher:")
+        cipher_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
+        input_layout.addWidget(cipher_label, 1, 0)
+        
+        # Create 10 input fields for each row
+        for row in range(2):
+            row_fields = []
+            for col in range(10):
+                # Create a QLineEdit with validation for digits only
+                field = QLineEdit()
+                field.setMaxLength(5)  # Limit to 5 characters
+                field.setFixedWidth(100)  # Fixed width for all fields
+                field.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                
+                # Set validator to only allow digits
+                validator = QRegularExpressionValidator(QRegularExpression("[0-9]{0,5}"), field)
+                field.setValidator(validator)
+                
+                # Connect textChanged signal to update decoded characters
+                field.textChanged.connect(self.update_decoded_character)
+                
+                # Add to layout (offset column by 1 to account for labels)
+                input_layout.addWidget(field, row, col + 1)
+                row_fields.append(field)
+            
+            self.input_fields.append(row_fields)
+        
+        # Add the input widget to the main layout
+        main_layout.addWidget(input_widget)
+        
+        # Create result display area
+        result_widget = QWidget()
+        result_layout = QVBoxLayout(result_widget)
+        
+        result_label = QLabel("Decoded Characters:")
+        result_label.setStyleSheet("font-weight: bold; font-size: 12pt;")
+        result_layout.addWidget(result_label)
+        
+        self.result_display = QLineEdit()
+        self.result_display.setReadOnly(True)
+        self.result_display.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.result_display.setStyleSheet("font-size: 14pt; background-color: #f0f0f0;")
+        result_layout.addWidget(self.result_display)
+        
+        # Add the result widget to the main layout
+        main_layout.addWidget(result_widget)
+
+    
+    def set_pad_value(self, value):
+        """Set the pad row value programmatically"""
+        if not value:
+            return False
+        
+        # Temporarily disconnect signals to prevent multiple updates
+        for field in self.input_fields[0]:
+            field.blockSignals(True)
+        
+        try:
+            # Distribute the value across the pad row fields
+            remaining_value = value
+            for i, field in enumerate(self.input_fields[0]):
+                if not remaining_value:
+                    field.clear()
+                    continue
+                
+                # Take up to 5 digits for each field
+                field_value = remaining_value[:5]
+                remaining_value = remaining_value[5:]
+                field.setText(field_value)
+            
+            # Update the decoded characters
+            self.update_decoded_character()
+            return True
+        finally:
+            # Reconnect signals
+            for field in self.input_fields[0]:
+                field.blockSignals(False)
+    
+    def set_cipher_value(self, value):
+        """Set the cipher row value programmatically"""
+        if not value:
+            return False
+        
+        # Temporarily disconnect signals to prevent multiple updates
+        for field in self.input_fields[1]:
+            field.blockSignals(True)
+        
+        try:
+            # Distribute the value across the cipher row fields
+            remaining_value = value
+            for i, field in enumerate(self.input_fields[1]):
+                if not remaining_value:
+                    field.clear()
+                    continue
+                
+                # Take up to 5 digits for each field
+                field_value = remaining_value[:5]
+                remaining_value = remaining_value[5:]
+                field.setText(field_value)
+            
+            # Update the decoded characters
+            self.update_decoded_character()
+            return True
+        finally:
+            # Reconnect signals
+            for field in self.input_fields[1]:
+                field.blockSignals(False)
+    
+    def update_decoded_character(self):
+        """Update the decoded characters based on the input fields"""
+        # Clear the result display
+        self.result_display.clear()
+        
+        # Collect all digits from pad and cipher rows
+        pad_digits = ""
+        cipher_digits = ""
+        
+        for field in self.input_fields[0]:  # Pad row
+            pad_digits += field.text()
+        
+        for field in self.input_fields[1]:  # Cipher row
+            cipher_digits += field.text()
+        
+        # If we don't have any input, clear the result and return
+        if not pad_digits or not cipher_digits:
+            return
+        
+        # Process the digits in pairs to decode characters
+        decoded_text = ""
+        min_length = min(len(pad_digits), len(cipher_digits))
+        
+        for i in range(0, min_length, 2):
+            # If we don't have a complete pair, break
+            if i + 1 >= min_length:
+                break
+            
+            # Get a pair of digits from each row
+            pad_pair = pad_digits[i:i+2]
+            cipher_pair = cipher_digits[i:i+2]
+            
+            # Decrypt the pair
+            decrypted_digits = crypt.otp_mod_decrypt(cipher_pair, pad_pair)
+            
+            # Format the decrypted digits as a two-digit string
+            formatted_digits = decrypted_digits
+            if len(decrypted_digits) == 1:
+                formatted_digits = "0" + decrypted_digits
+            elif len(decrypted_digits) > 2:
+                formatted_digits = decrypted_digits[:2]
+            
+            # Convert to letter
+            digit_to_letter = {v: k for k, v in crypt.LETTER_TO_DIGIT.items()}
+            decoded_char = digit_to_letter.get(formatted_digits, "?")
+            
+            # Add to the decoded text
+            decoded_text += decoded_char
+        
+        # Display the decoded text
+        self.result_display.setText(decoded_text)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -31,22 +256,113 @@ class MainWindow(QMainWindow):
         self.missions = []
         self.current_mission = None
 
-        # Prompt the user input for the encryption key
+        # Show the encryption key dialog first
+        if not self.show_key_dialog():
+            # If the dialog was closed without a valid key, exit
+            sys.exit(0)
+            
+        # Initialize the main UI
+        self.init_ui()
+        self.show()
+    
+    def show_key_dialog(self):
+        """Show the encryption key dialog and return True if a valid key was provided"""
+        # Create a custom dialog for encryption key input with Decode Only button
+        key_dialog = QDialog(self)
+        key_dialog.setWindowTitle("Encryption Key")
+        key_dialog.setFixedSize(400, 150)
+        
+        dialog_layout = QVBoxLayout(key_dialog)
+        
+        # Add label and input field
+        dialog_layout.addWidget(QLabel("Enter encryption key:"))
+        key_input_field = QLineEdit()
+        dialog_layout.addWidget(key_input_field)
+        
+        # Add buttons
+        button_layout = QHBoxLayout()
+        
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(lambda: self.process_key_input(key_dialog, key_input_field))
+        
+        decode_button = QPushButton("Decode Only")
+        decode_button.clicked.connect(lambda: self.open_decode_window(key_dialog))
+        
+        cancel_button = QPushButton("Cancel")
+        cancel_button.clicked.connect(key_dialog.reject)
+        
+        button_layout.addWidget(ok_button)
+        button_layout.addWidget(decode_button)
+        button_layout.addWidget(cancel_button)
+        
+        dialog_layout.addLayout(button_layout)
+        
+        # Show the dialog and wait for user input
+        result = key_dialog.exec()
+        
+        # Return True if the dialog was accepted (valid key provided)
+        return result == QDialog.DialogCode.Accepted
+    
+    def process_key_input(self, dialog, key_input_field):
+        """Process the encryption key input"""
         global key
-        key_input, ok = QInputDialog.getText(self, "Encryption Key", "Enter encryption key:")
-        if not ok or not key_input:
+        key_input = key_input_field.text()
+        
+        if not key_input:
             QMessageBox.critical(self, "Error", "Encryption key is required to use this application.")
-            sys.exit(1)
+            return
         
         # Convert the key to bytes for use with AESGCM
         try:
             key = base64.b64decode(key_input)
+            dialog.accept()
         except:
             QMessageBox.critical(self, "Error", "Invalid encryption key format. Please provide a valid base64-encoded key.")
-            sys.exit(1)
-
-
-        # On the left hand side, add missions selection
+            return
+    
+    def open_decode_window(self, parent_dialog=None):
+        """Open the decode window"""
+        decode_window = DecodeWindow(self)
+        
+        # Example: Set pad and cipher values programmatically
+        # This demonstrates how to use the new methods and helps diagnose the issue
+        
+        # We'll test with a few different examples to ensure decoding works correctly
+        
+        # Example 1: Letter 'A' (pad: 01, cipher: 02 -> result: 'B')
+        # When pad=01 and cipher=02, the decryption should be 01 (A)
+        print("\nTesting Example 1: pad=01, cipher=02")
+        decode_window.set_pad_value("01")
+        decode_window.set_cipher_value("02")
+        
+        # Example 2: Letter 'Z' (pad: 26, cipher: 36 -> result: 'K')
+        # When pad=26 and cipher=36, the decryption should be 10 (J)
+        print("\nTesting Example 2: pad=26, cipher=36")
+        decode_window.set_pad_value("26")
+        decode_window.set_cipher_value("36")
+        
+        # Example 3: Space character (pad: 00, cipher: 05 -> result: '5')
+        # When pad=00 and cipher=05, the decryption should be 05 (5)
+        print("\nTesting Example 3: pad=00, cipher=05")
+        decode_window.set_pad_value("00")
+        decode_window.set_cipher_value("05")
+        
+        # Example 4: Single-digit result (pad: 09, cipher: 10 -> result: 'A')
+        # When pad=09 and cipher=10, the decryption should be 1, which should be formatted as 01 (A)
+        print("\nTesting Example 4: pad=09, cipher=10")
+        decode_window.set_pad_value("09")
+        decode_window.set_cipher_value("10")
+        
+        # Show the window with the last example's values
+        decode_window.exec()
+        
+        # If opened from the key dialog, close the application after decode window is closed
+        if parent_dialog:
+            parent_dialog.reject()
+            sys.exit(0)
+    
+    def init_ui(self):
+        """Initialize the main UI components"""
         # Create central widget and main layout
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -93,32 +409,30 @@ class MainWindow(QMainWindow):
         broadcast_layout.setContentsMargins(0, 0, 0, 0)  # Remove margins to align with data grid
         broadcast_layout.setSpacing(10)  # Add spacing between widgets
         broadcast_controls.setMaximumHeight(50)  # Limit the height of broadcast controls
-
+        
         # Add text input field with validation
         self.broadcast_text = QTextEdit()
         self.broadcast_text.setFixedHeight(30)  # Make it a single line
         self.broadcast_text.setPlaceholderText("Enter broadcast message (max 25 chars)")
         self.broadcast_text.textChanged.connect(self.validate_broadcast_text)
         self.broadcast_text.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)  # Expand horizontally
-
+        
         # Add Generate button
         self.generate_button = QPushButton("Generate")
         self.generate_button.clicked.connect(self.on_generate_clicked)
         self.generate_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)  # Fixed size
-
+        
         # Add widgets to layout
         broadcast_layout.addWidget(self.broadcast_text)
         broadcast_layout.addWidget(self.generate_button)
-
+        
         # Add the broadcast controls to the content layout with no stretch
         self.content_layout.addWidget(broadcast_controls, 0)  # Set stretch factor to 0
-
+        
         main_layout.addWidget(self.content_widget)
         
         # Populate mission list with mission IDs
         self.refresh_mission_list()
-
-        self.show()
 
     def refresh_mission_list(self):
         self.mission_list.clear()
@@ -245,7 +559,7 @@ class MainWindow(QMainWindow):
             pad_row = data[0].strip().replace(" ", "")
 
             ciphertext = crypt.otp_mod_encrypt(encoded_message, pad_row)
-            original_digits = crypt.otp_mod_decrypt(ciphertext, pad_row)
+            # original_digits = crypt.otp_mod_decrypt(ciphertext, pad_row)
 
             generate_broadcast(self.current_mission.id, ciphertext)
             
