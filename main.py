@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from pydub import AudioSegment
 
+import crypt
 from audio import append_mission_id_segment
 from missions import get_missions, add_mission, remove_mission
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -22,12 +23,7 @@ key = None
 LETTER_TO_DIGIT = {chr(i + 65): f"{i + 1:02d}" for i in range(26)}
 LETTER_TO_DIGIT[' '] = "00"
 
-# Test example
-# text = "MEET AT DAWN"
-# encoded = ''.join(LETTER_TO_DIGIT[ch] for ch in text)
-# print("Encoded:", encoded)
-
-def generate_broadcast(mission_id):
+def generate_broadcast(mission_id, encoded_message):
     broadcast_audio = (
         AudioSegment.from_mp3("resources/jingle.mp3") +
         AudioSegment.silent(duration=2000) +
@@ -74,7 +70,7 @@ class MainWindow(QMainWindow):
         self.missions = []
         self.current_mission = None
 
-        generate_broadcast()
+        # generate_broadcast()
 
         # generate_and_save_key("key.txt")
 
@@ -277,8 +273,12 @@ class MainWindow(QMainWindow):
         )
         
         if confirm == QMessageBox.StandardButton.Yes:
-            # Generate encoded message
-            encoded_message = ''.join(LETTER_TO_DIGIT.get(ch, "00") for ch in message)
+            encoded_message = "".join(LETTER_TO_DIGIT.get(ch, "00") for ch in message)
+
+            pad_row = data[0].strip().replace(" ", "")
+            ciphertext = crypt.opt_mod(encoded_message, pad_row)
+
+            print("Ciphertext digits:", ciphertext)
 
             generate_broadcast(self.current_mission.id)
             
