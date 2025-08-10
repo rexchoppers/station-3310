@@ -12,9 +12,8 @@ from pydub import AudioSegment
 
 import crypt
 from audio import append_mission_id_segment, audio_mapping
-from document import generate_spy_pad_pdf
+from document import generate_spy_pad_pdf, preview_pdf_external
 from missions import get_missions, add_mission, remove_mission
-from pdf_preview_widget import PdfPreviewWidget
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # Encryption key for mission data (256-bit key)
@@ -255,19 +254,15 @@ class MainWindow(QMainWindow):
             pad_data = mission.get_data()
             pad_lines = pad_data.splitlines()  # List of pad rows
 
+            print(pad_lines)
+
             # Generate PDF bytes (make sure generate_spy_pad_pdf_bytes is imported)
             pdf_bytes = generate_spy_pad_pdf(pad_lines)
+            preview_pdf_external(pdf_bytes)
 
-            # Show preview widget
-            preview = PdfPreviewWidget(pdf_bytes)
-            preview.setWindowTitle(f"Mission {mission.id} Pad Preview")
-            preview.resize(800, 600)
-            preview.show()
-
-            # Keep a reference to prevent garbage collection if needed
-            self.current_pdf_preview = preview
 
         except Exception as e:
+            print(e)
             QMessageBox.critical(self, "Error", f"Failed to add mission: {str(e)}")
             
     def validate_broadcast_text(self):

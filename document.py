@@ -1,4 +1,9 @@
 import io
+import os
+import sys
+import tempfile
+import webbrowser
+
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -50,3 +55,18 @@ def generate_spy_pad_pdf(pad_lines):
 
     buffer.seek(0)
     return buffer.getvalue()
+
+def preview_pdf_external(pdf_bytes):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as f:
+        f.write(pdf_bytes)
+        temp_path = f.name
+
+    if sys.platform == "win32":
+        os.startfile(temp_path)
+    elif sys.platform == "darwin":
+        os.system(f"open '{temp_path}'")
+    else:
+        try:
+            os.system(f"xdg-open '{temp_path}'")
+        except Exception:
+            webbrowser.open(f"file://{temp_path}")
