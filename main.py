@@ -294,7 +294,7 @@ class MainWindow(QMainWindow):
         confirm = QMessageBox.question(
             self,
             "Confirm Broadcast Generation",
-            f"The first row in the pad will be used and removed after generation. Continue?",
+            f"The first row in the pad will be used and removed after generation. The broadcast generation may take a while to complete. Continue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
