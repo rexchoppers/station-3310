@@ -2,7 +2,7 @@
 
 A numbers station simulator for creating, managing, and broadcasting encrypted messages using one-time pad cryptography.
 
-## Description
+## Overview
 
 Station 3310 is a desktop application that simulates the operation of a numbers station - a shortwave radio station that broadcasts encrypted messages to covert agents. The application allows users to:
 
@@ -97,3 +97,7 @@ The application uses modern cryptography (AES-GCM) for secure storage of mission
 
 ## License
 See the [LICENSE](LICENSE) file for details.
+
+## Credits
+- Jingle: [https://www.youtube.com/watch?v=tpeWHtlIsB4](https://www.youtube.com/watch?v=tpeWHtlIsB4)
+- Howler: [https://www.youtube.com/watch?v=m3Gbj9XyC3Y](https://www.youtube.com/watch?v=m3Gbj9XyC3Y)
