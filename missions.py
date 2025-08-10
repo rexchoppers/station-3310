@@ -30,13 +30,10 @@ class Mission:
     def decrypt(self, key):
         self.encrypted_id = self.id
 
-        print("Decrypting mission:", self.id)
         if self._is_decrypted:
             return True
 
         try:
-            print("Decrypt called", key)
-
             aesgcm = AESGCM(key)
 
             # Decode Mission ID
@@ -59,7 +56,6 @@ class Mission:
 
                 self.id = decrypted_filename
             except Exception as e:
-                print(f"Filename decryption error: {e}")
                 return False
 
             try:
@@ -83,11 +79,9 @@ class Mission:
 
                 return True
             except Exception as e:
-                print(f"Decryption error: {e}")
                 return False
 
         except Exception as e:
-            print(f"Error during decryption: {e}")
             return False
 
     def encrypt(self, key):
@@ -179,5 +173,4 @@ def remove_mission(mission):
         else:
             return False
     except Exception as e:
-        print(f"Error removing mission: {e}")
         return False

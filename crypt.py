@@ -21,7 +21,7 @@ def generate_pad(pages=100, groups_per_page=10, group_length=5) -> list[str]:
         pad.append(' '.join(page))
     return pad
 
-def opt_mod(message_digits: str, pad_digits: str) -> str:
+def otp_mod(message_digits: str, pad_digits: str) -> str:
     if len(pad_digits) < len(message_digits):
         raise ValueError("Pad is too short for this message")
 

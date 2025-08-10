@@ -25,6 +25,9 @@ LETTER_TO_DIGIT = {chr(i + 65): f"{i + 1:02d}" for i in range(26)}
 LETTER_TO_DIGIT[' '] = "00"
 
 def generate_broadcast(mission_id, ciphertext):
+    print(mission_id)
+    print(ciphertext)
+
     broadcast_audio = (
         AudioSegment.from_mp3("resources/jingle.mp3") +
         AudioSegment.silent(duration=2000) +
@@ -68,7 +71,6 @@ def generate_broadcast(mission_id, ciphertext):
     broadcast_audio += AudioSegment.silent(duration=2000)
 
     broadcast_audio.export("broadcast.mp3", format="mp3")
-    print("Broadcast saved as broadcast.mp3")
 
 def generate_and_save_key(filepath: str):
     key = AESGCM.generate_key(bit_length=256)  # bytes
@@ -78,6 +80,18 @@ def generate_and_save_key(filepath: str):
     with open(filepath, 'w') as f:
         f.write(b64_key)
     print(f"Key saved to {filepath}")
+
+def otp_mod_decrypt(ciphertext_digits: str, pad_digits: str) -> str:
+    if len(pad_digits) < len(ciphertext_digits):
+        raise ValueError("Pad is too short for this message")
+
+    original_digits = []
+    for c_dig, p_dig in zip(ciphertext_digits, pad_digits):
+        diff = (int(c_dig) - int(p_dig)) % 10
+        original_digits.append(str(diff))
+
+    return ''.join(original_digits)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -93,14 +107,6 @@ class MainWindow(QMainWindow):
         # Store loaded missions
         self.missions = []
         self.current_mission = None
-
-        # generate_and_save_key("key.txt")
-
-        generate_spy_pad_pdf([
-    "25379069853909871425493582770175334845224302770051",
-    "33823317593054984612432233190636311392197434722287",
-    "47981234567890123456789012345678901234567890123456"
-])
 
         # Prompt the user input for the encryption key
         global key
@@ -195,8 +201,6 @@ class MainWindow(QMainWindow):
         self.mission_list.clear()
         self.missions = get_missions(key)
 
-        print("Refresh called")
-
         for mission in self.missions:
             self.mission_list.addItem(mission.id)
             
@@ -254,15 +258,13 @@ class MainWindow(QMainWindow):
             pad_data = mission.get_data()
             pad_lines = pad_data.splitlines()  # List of pad rows
 
-            print(pad_lines)
-
             # Generate PDF bytes (make sure generate_spy_pad_pdf_bytes is imported)
             pdf_bytes = generate_spy_pad_pdf(pad_lines)
             preview_pdf_external(pdf_bytes)
 
-
+            # Show success message
+            QMessageBox.information(self, "Success", f"Mission '{mission.id}' added successfully")
         except Exception as e:
-            print(e)
             QMessageBox.critical(self, "Error", f"Failed to add mission: {str(e)}")
             
     def validate_broadcast_text(self):
@@ -283,7 +285,8 @@ class MainWindow(QMainWindow):
             cursor = self.broadcast_text.textCursor()
             cursor.movePosition(cursor.MoveOperation.End)
             self.broadcast_text.setTextCursor(cursor)
-            
+
+
     def on_generate_clicked(self):
         """Handle Generate button click"""
         # Check if there's a selected mission with data
@@ -292,7 +295,7 @@ class MainWindow(QMainWindow):
             return
             
         # Get the message text
-        message = self.broadcast_text.toPlainText().strip().upper()
+        message = self.broadcast_text.toPlainText().upper()
         
         if not message:
             QMessageBox.warning(self, "Warning", "Please enter a message to broadcast")
@@ -314,12 +317,24 @@ class MainWindow(QMainWindow):
         )
         
         if confirm == QMessageBox.StandardButton.Yes:
+            print("MESSAGE:", message)
+
             encoded_message = "".join(LETTER_TO_DIGIT.get(ch, "00") for ch in message)
 
+            print("Encoded message digits:", encoded_message)
+
             pad_row = data[0].strip().replace(" ", "")
-            ciphertext = crypt.opt_mod(encoded_message, pad_row)
+
+            print("Using pad row:", pad_row)
+
+            ciphertext = crypt.otp_mod(encoded_message, pad_row)
 
             print("Ciphertext digits:", ciphertext)
+
+            print("Decrypting ciphertext to original digits...")
+            original_digits = otp_mod_decrypt(ciphertext, pad_row)
+
+            print("Original digits:", original_digits)
 
             generate_broadcast(self.current_mission.id, ciphertext)
             
