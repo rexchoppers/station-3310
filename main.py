@@ -57,6 +57,14 @@ def generate_broadcast(mission_id, ciphertext):
 
             broadcast_audio += AudioSegment.silent(duration=2000)  # Add a pause after each group
 
+    # Message end howl
+    broadcast_audio += AudioSegment.from_mp3("resources/howler.mp3")[:2000]
+
+    # Add a final jingle
+    broadcast_audio += AudioSegment.silent(duration=2000)
+
+    broadcast_audio += AudioSegment.from_mp3("resources/jingle.mp3")[:10000]
+    broadcast_audio += AudioSegment.silent(duration=2000)
 
     broadcast_audio.export("broadcast.mp3", format="mp3")
     print("Broadcast saved as broadcast.mp3")
@@ -186,6 +194,10 @@ class MainWindow(QMainWindow):
 
         for mission in self.missions:
             self.mission_list.addItem(mission.id)
+            
+        # Select the first mission if available
+        if self.missions:
+            self.mission_list.setCurrentRow(0)
 
     def on_mission_selected(self, index):
         """Handle mission selection from the list"""
