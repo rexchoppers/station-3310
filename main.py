@@ -16,13 +16,7 @@ from document import generate_spy_pad_pdf, preview_pdf_external
 from missions import get_missions, add_mission, remove_mission
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-# Encryption key for mission data (256-bit key)
-# This will be set by user input
 key = None
-
-# Letter to two-digit number (A=01 to Z=26, space=00)
-LETTER_TO_DIGIT = {chr(i + 65): f"{i + 1:02d}" for i in range(26)}
-LETTER_TO_DIGIT[' '] = "00"
 
 def generate_broadcast(mission_id, ciphertext):
     print(mission_id)
@@ -80,18 +74,6 @@ def generate_and_save_key(filepath: str):
     with open(filepath, 'w') as f:
         f.write(b64_key)
     print(f"Key saved to {filepath}")
-
-def otp_mod_decrypt(ciphertext_digits: str, pad_digits: str) -> str:
-    if len(pad_digits) < len(ciphertext_digits):
-        raise ValueError("Pad is too short for this message")
-
-    original_digits = []
-    for c_dig, p_dig in zip(ciphertext_digits, pad_digits):
-        diff = (int(c_dig) - int(p_dig)) % 10
-        original_digits.append(str(diff))
-
-    return ''.join(original_digits)
-
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -317,24 +299,12 @@ class MainWindow(QMainWindow):
         )
         
         if confirm == QMessageBox.StandardButton.Yes:
-            print("MESSAGE:", message)
-
-            encoded_message = "".join(LETTER_TO_DIGIT.get(ch, "00") for ch in message)
-
-            print("Encoded message digits:", encoded_message)
+            encoded_message = "".join(crypt.LETTER_TO_DIGIT.get(ch, "00") for ch in message)
 
             pad_row = data[0].strip().replace(" ", "")
 
-            print("Using pad row:", pad_row)
-
-            ciphertext = crypt.otp_mod(encoded_message, pad_row)
-
-            print("Ciphertext digits:", ciphertext)
-
-            print("Decrypting ciphertext to original digits...")
-            original_digits = otp_mod_decrypt(ciphertext, pad_row)
-
-            print("Original digits:", original_digits)
+            ciphertext = crypt.otp_mod_encrypt(encoded_message, pad_row)
+            original_digits = crypt.otp_mod_decrypt(ciphertext, pad_row)
 
             generate_broadcast(self.current_mission.id, ciphertext)
             
@@ -344,11 +314,8 @@ class MainWindow(QMainWindow):
             
             # Update the mission data
             self.current_mission.update_data(updated_pad_data, key)
-            
-            # Update the mission display
+
             self.update_mission_display()
-            
-            # Clear the broadcast message after generation
             self.broadcast_text.clear()
             
             QMessageBox.information(self, "Success", "Broadcast generated successfully and pad row removed")
@@ -368,7 +335,6 @@ class MainWindow(QMainWindow):
         
         if confirm == QMessageBox.StandardButton.Yes:
             try:
-                # Get mission from `missions` list
                 mission_to_remove = None
 
                 for mission in self.missions:
@@ -381,18 +347,13 @@ class MainWindow(QMainWindow):
                 if success:
                     QMessageBox.information(self, "Success", f"Mission '{mission_to_remove.id}' removed successfully")
                     
-                    # Clear current mission
                     self.current_mission = None
-                    
-                    # Refresh the mission list
                     self.refresh_mission_list()
                     
-                    # Clear the mission display
                     self.mission_data.clear()
                     self.mission_data.setRowCount(0)
                     self.mission_data.setColumnCount(0)
                     
-                    # Disable the remove button
                     self.remove_mission_button.setEnabled(False)
                 else:
                     QMessageBox.warning(self, "Warning", f"Could not find mission file to remove")
