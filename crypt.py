@@ -1,7 +1,6 @@
 import secrets
 import string
 
-
 def generate_mission_id() -> str:
     alphabet = string.ascii_uppercase + string.digits
 

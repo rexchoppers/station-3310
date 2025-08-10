@@ -108,6 +108,27 @@ class Mission:
 
     def get_data(self):
         return self.data
+        
+    def update_data(self, new_data, key):
+        """Update the mission data and save it back to the file"""
+        self.data = new_data
+        self._is_decrypted = True
+        
+        # Re-encrypt the data
+        self.encrypt(key)
+        
+        # Save the updated data to the file
+        current_dir = Path(__file__).parent
+        missions_dir = (current_dir / "missions").resolve()
+        mission_file = missions_dir / f"{self.id}.txt"
+        
+        with open(mission_file, 'wb') as f:
+            f.write(self.data)
+            
+        # Decrypt again to restore the decrypted state
+        self.decrypt(key)
+        
+        return True
 
 
 def get_missions(key):

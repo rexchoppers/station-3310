@@ -45,7 +45,7 @@ def generate_broadcast(mission_id, ciphertext):
 
     # Add howler for message segment
     broadcast_audio += AudioSegment.silent(duration=1000)
-    broadcast_audio += AudioSegment.from_mp3("resources/howler.mp3")[:10000]
+    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:10000] - 2)
 
     # Add a pause before the message
     broadcast_audio += AudioSegment.silent(duration=1000)
@@ -62,12 +62,12 @@ def generate_broadcast(mission_id, ciphertext):
             broadcast_audio += AudioSegment.silent(duration=2000)  # Add a pause after each group
 
     # Message end howl
-    broadcast_audio += AudioSegment.from_mp3("resources/howler.mp3")[:2000]
+    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:2000] - 2)
 
     # Add a final jingle
     broadcast_audio += AudioSegment.silent(duration=2000)
 
-    broadcast_audio += AudioSegment.from_mp3("resources/jingle.mp3")[:10000]
+    broadcast_audio += AudioSegment.from_mp3("resources/jingle.mp3")
     broadcast_audio += AudioSegment.silent(duration=2000)
 
     broadcast_audio.export("broadcast.mp3", format="mp3")
@@ -338,7 +338,17 @@ class MainWindow(QMainWindow):
 
             generate_broadcast(self.current_mission.id, ciphertext)
             
-            QMessageBox.information(self, "Success", "Broadcast generated successfully")
+            # Remove the first row from the pad data
+            data = data[1:]  # Skip the first row
+            updated_pad_data = "\n".join(data)
+            
+            # Update the mission data
+            self.current_mission.update_data(updated_pad_data, key)
+            
+            # Update the mission display
+            self.update_mission_display()
+            
+            QMessageBox.information(self, "Success", "Broadcast generated successfully and pad row removed")
             
     def remove_mission(self):
         if not self.current_mission:
