@@ -8,63 +8,14 @@ from PyQt6.QtWidgets import (
 )
 
 from PyQt6.QtCore import Qt
-from pydub import AudioSegment
 
 import crypt
-from audio import append_mission_id_segment, audio_mapping
+from audio import append_mission_id_segment, audio_mapping, generate_broadcast
 from document import generate_spy_pad_pdf, preview_pdf_external
 from missions import get_missions, add_mission, remove_mission
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 key = None
-
-def generate_broadcast(mission_id, ciphertext):
-    print(mission_id)
-    print(ciphertext)
-
-    broadcast_audio = (
-        AudioSegment.from_mp3("resources/jingle.mp3") +
-        AudioSegment.silent(duration=2000) +
-        AudioSegment.from_mp3("resources/jingle.mp3") +
-        AudioSegment.silent(duration=2000) +
-        AudioSegment.from_mp3("resources/jingle.mp3") +
-        AudioSegment.silent(duration=2000)
-    )
-
-
-    # Add the mission ID to the audio + repeat 5 times
-    for _ in range(5):
-        broadcast_audio = append_mission_id_segment(broadcast_audio, mission_id)
-        broadcast_audio += AudioSegment.silent(duration=1000)
-
-    # Add howler for message segment
-    broadcast_audio += AudioSegment.silent(duration=1000)
-    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:10000] - 2)
-
-    # Add a pause before the message
-    broadcast_audio += AudioSegment.silent(duration=1000)
-
-    # Group the encoded message into groups of 5 numbers
-    for i in range(0, len(ciphertext), 5):
-        segment = ciphertext[i:i+5]
-
-        # For each character group, repeat it 5 times
-        for _ in range(5):
-            for char in segment:
-                broadcast_audio += AudioSegment.from_mp3(audio_mapping[char]["audio"])[:audio_mapping[char]["cutoff"]]
-
-            broadcast_audio += AudioSegment.silent(duration=2000)  # Add a pause after each group
-
-    # Message end howl
-    broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:2000] - 2)
-
-    # Add a final jingle
-    broadcast_audio += AudioSegment.silent(duration=2000)
-
-    broadcast_audio += AudioSegment.from_mp3("resources/jingle.mp3")
-    broadcast_audio += AudioSegment.silent(duration=2000)
-
-    broadcast_audio.export("broadcast.mp3", format="mp3")
 
 def generate_and_save_key(filepath: str):
     key = AESGCM.generate_key(bit_length=256)  # bytes
