@@ -10,21 +10,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 import crypt
-from audio import append_mission_id_segment, audio_mapping, generate_broadcast
+from audio import generate_broadcast
 from document import generate_spy_pad_pdf, preview_pdf_external
 from missions import get_missions, add_mission, remove_mission
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 key = None
-
-def generate_and_save_key(filepath: str):
-    key = AESGCM.generate_key(bit_length=256)  # bytes
-    # Encode to base64 string
-    b64_key = base64.b64encode(key).decode('utf-8')
-    # Save to file
-    with open(filepath, 'w') as f:
-        f.write(b64_key)
-    print(f"Key saved to {filepath}")
 
 class MainWindow(QMainWindow):
     def __init__(self):

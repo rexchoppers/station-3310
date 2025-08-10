@@ -1,5 +1,8 @@
+import base64
 import secrets
 import string
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 LETTER_TO_DIGIT = {chr(i + 65): f"{i + 1:02d}" for i in range(26)}
 LETTER_TO_DIGIT[' '] = "00"
@@ -43,3 +46,12 @@ def otp_mod_decrypt(ciphertext_digits: str, pad_digits: str) -> str:
         original_digits.append(str(diff))
 
     return ''.join(original_digits)
+
+def generate_and_save_key(filepath: str):
+    key = AESGCM.generate_key(bit_length=256)  # bytes
+    # Encode to base64 string
+    b64_key = base64.b64encode(key).decode('utf-8')
+    # Save to file
+    with open(filepath, 'w') as f:
+        f.write(b64_key)
+    print(f"Key saved to {filepath}")

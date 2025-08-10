@@ -1,4 +1,6 @@
 from pydub import AudioSegment
+import datetime
+import os
 
 audio_mapping = {
     "0": {
@@ -203,10 +205,15 @@ def generate_broadcast(mission_id, ciphertext):
     # Message end howl
     broadcast_audio += (AudioSegment.from_mp3("resources/howler.mp3")[:2000] - 2)
 
-    # Add a final jingle
-    broadcast_audio += AudioSegment.silent(duration=2000)
-
-    broadcast_audio += AudioSegment.from_mp3("resources/jingle.mp3")
-    broadcast_audio += AudioSegment.silent(duration=2000)
-
-    broadcast_audio.export("broadcast.mp3", format="mp3")
+    # Format current date and time
+    current_time = datetime.datetime.now()
+    formatted_time = current_time.strftime("%Y-%m-%d %H:%M")
+    
+    # Create output directory if it doesn't exist
+    output_dir = "output"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    # Export to output directory with date and time in filename
+    output_path = os.path.join(output_dir, f"{formatted_time}.mp3")
+    broadcast_audio.export(output_path, format="mp3")
