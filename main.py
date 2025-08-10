@@ -244,7 +244,9 @@ class MainWindow(QMainWindow):
     def add_mission(self):
         try:
             mission = add_mission(key)
-            # mission.decrypt(key)
+
+            # Decrypt so we can reference the mission data
+            mission.decrypt(key)
 
             # Refresh mission list
             self.refresh_mission_list()
